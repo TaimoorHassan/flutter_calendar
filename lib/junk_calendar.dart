@@ -17,7 +17,7 @@ int _getMonthSinceEpoch(DateTime date) {
   return (((date.year) - 1970) * 12) + date.month - 1;
 }
 
-class WilderCalendarController {
+class JunkCalendarController {
   DateTime initialDate;
 
   var pageController = PageController(
@@ -87,7 +87,7 @@ class WilderCalendarController {
 
   DateTime? _myDate;
 
-  WilderCalendarController({required this.initialDate}) {
+  JunkCalendarController({required this.initialDate}) {
     _myDate = initialDate;
   }
 }
@@ -109,36 +109,40 @@ extension PrettyFormatting on DateTime {
   }
 }
 
-class WilderCalendar extends StatefulWidget {
-  const WilderCalendar({
+class JunkCalendar extends StatefulWidget {
+  const JunkCalendar({
     super.key,
     this.controller,
     this.border,
     this.cellBuilder,
     this.headerCellBuilder,
     this.initialDate,
+    this.titleBarBuilder,
+    this.scrollDirection = Axis.vertical
   });
 
-  final WilderCalendarController? controller;
+  final JunkCalendarController? controller;
   final TableBorder? border;
   final Widget Function(DateTime date, bool isCurrentMonth)? cellBuilder;
+  final Widget Function(DateTime date)? titleBarBuilder;
   final Widget Function(String day)? headerCellBuilder;
   final DateTime? initialDate;
+  final Axis scrollDirection;
 
   @override
-  State<WilderCalendar> createState() {
-    return _WilderCalendarState();
+  State<JunkCalendar> createState() {
+    return _JunkCalendarState();
   }
 }
 
-class _WilderCalendarState extends State<WilderCalendar> {
-  late WilderCalendarController controller;
+class _JunkCalendarState extends State<JunkCalendar> {
+  late JunkCalendarController controller;
 
   @override
   void initState() {
     super.initState();
     controller = widget.controller ??
-        WilderCalendarController(
+        JunkCalendarController(
           initialDate: widget.initialDate ?? DateTime.now(),
         );
     controller.pageController.addListener(() {
@@ -169,10 +173,11 @@ class _WilderCalendarState extends State<WilderCalendar> {
   Widget build(BuildContext context) {
     return PageView.builder(
         controller: widget.controller?.pageController,
-        scrollDirection: Axis.vertical,
+        scrollDirection: widget.scrollDirection,
         itemBuilder: (context, index) {
           return Container(
             child: _SingleMonthView(
+              titleBarBuilder: widget.titleBarBuilder,
               cellBuilder: widget.cellBuilder,
               border: widget.border,
               date: _getDateFromMonthsSinceEpoch(index),
@@ -208,13 +213,14 @@ class _SingleMonthView extends StatelessWidget {
     required this.date,
     this.border,
     this.cellBuilder,
-    this.headerCellBuilder,
+    this.headerCellBuilder, this.titleBarBuilder,
   });
   final DateTime date;
 
   final TableBorder? border;
   final Widget Function(DateTime date, bool isCurrentMonth)? cellBuilder;
   final Widget Function(String day)? headerCellBuilder;
+  final Widget Function(DateTime date)? titleBarBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -247,16 +253,17 @@ class _SingleMonthView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          date.year.toString(),
-          style: TextStyle(fontSize: 20),
-        ),
-        Text(
-          days[date.weekday - 1] + ' ' + date.day.toString(),
-          style: TextStyle(fontSize: 20),
-        ),
+        titleBarBuilder != null
+            ? titleBarBuilder!(date)
+            : Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  date.toPretthyString(),
+                  style: TextStyle(fontSize: 20),
+                ),
+              ),
         Table(
-          border: TableBorder.all(width: 0),
+          border: border ?? TableBorder.all(width: 0),
           children: [
             TableRow(children: daysRow),
             ...arrays.map(
